@@ -1,3 +1,25 @@
+# Logging básico para produção
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Adicione outros loggers específicos se necessário
+    },
+}
 """
 Django settings for insecure_django project.
 
@@ -21,7 +43,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-b0@$%a6ho7v2b(@_ac5xbduv$w@n3)bo!*g(0y6+dmj3ry8sm='
+import os
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-b0@$%a6ho7v2b(@_ac5xbduv$w@n3)bo!*g(0y6+dmj3ry8sm=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
