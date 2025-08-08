@@ -1,7 +1,12 @@
+
 from django.shortcuts import render, redirect
 import traceback
-import pickle
+import json
 from base64 import b64encode, b64decode
+from django.core import signing
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -14,11 +19,13 @@ def index(request):
         first_name = request.POST.get("first_name")
         last_name = request.POST.get("last_name")
 
+
         user = {"first_name": first_name, "last_name": last_name}
         response = redirect('/xploitpickl/dashboard')
-        user_encoded = b64encode(pickle.dumps(user))
-        user_encoded = user_encoded.decode("utf-8")  # For byte to string
-        response.set_cookie('user', user_encoded)
+        # Serializa em JSON e assina o valor
+        user_json = json.dumps(user)
+        signed_user = signing.dumps(user_json)
+        response.set_cookie('user', signed_user)
         return response
 
     return render(request, 'index.html')
@@ -27,22 +34,26 @@ def index(request):
 def dashboard(request):
     try:
         if request.COOKIES.get('user'):
-            user_cookie = request.COOKIES.get('user')
-            user_cookie = b64decode(user_cookie)
-            user = pickle.loads(user_cookie, encoding='utf-8')  # Warning: Insecure!
+            signed_user = request.COOKIES.get('user')
+            try:
+                user_json = signing.loads(signed_user)
+                user = json.loads(user_json)
+            except Exception:
+                logger.error("Cookie de usuário inválido ou adulterado")
+                return redirect("/")
             context = {"app_user": user}
             return render(request, 'dashboard.html', context)
         else:
             return redirect("/")
     except KeyError:
-        print("Key error")
+        logger.error("Key error")
         return redirect("/")
 
-    except ValueError :
-        print("Val error")
-        print("%s " % traceback.format_exc())
+    except ValueError:
+        logger.error("Val error")
+        logger.error(traceback.format_exc())
         return redirect("/")
 
     except Exception as e:
-        print("%s \n %s " % (str(e), traceback.format_exc()))
+        logger.error(f"{str(e)}\n{traceback.format_exc()}")
         return redirect("/")
